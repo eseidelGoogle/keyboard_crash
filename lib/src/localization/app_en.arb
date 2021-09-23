@@ -1,6 +1,0 @@
-{
-  "appTitle": "Keyboard Crash Repro",
-  "@appTitle": {
-    "description": "Self contained app for keyboard crash repo"
-  }
-}

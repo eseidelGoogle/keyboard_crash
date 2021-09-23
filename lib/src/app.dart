@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:keyboard_crash/src/editor/board_editor_viewmodel.dart';
 import 'package:keyboard_crash/src/editor/layout.dart';
-import 'package:keyboard_crash/src/model/board.dart';
+import 'package:keyboard_crash/src/editor/model.dart';
 import 'package:provider/provider.dart';
 
 /// The Widget that configures your application.
@@ -12,12 +12,7 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final board = BoardDetails(
-      id: 1,
-      author: const UserSummary(
-          uid: "user-uid-1234", name: 'Test User', username: 'test.user'),
-      created: DateTime.now().subtract(const Duration(days: 30)),
-    );
+    final board = BoardDetails(id: 1);
     return MaterialApp(
       theme: ThemeData(),
       home: ChangeNotifierProvider(
@@ -26,11 +21,7 @@ class MyApp extends StatelessWidget {
           appBar: AppBar(
             title: const Text('Keyboard Crash Repro'),
           ),
-          body: FutureBuilder<BoardDetails>(
-            future: Future.value(board),
-            initialData: board,
-            builder: (context, snapshot) => BoardLayout(snapshot.data),
-          ),
+          body: BoardLayout(board),
         ),
       ),
     );

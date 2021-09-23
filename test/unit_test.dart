@@ -7,9 +7,12 @@
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  group('Plus Operator', () {
-    test('should add two numbers together', () {
-      expect(1 + 1, 2);
+  group('Duration toString', () {
+    test('should convert to string', () {
+      int ago = -30;
+      final duration = Duration(milliseconds: ago);
+      final val = duration.toString();
+      expect(val, '-0:00:00.030000');
     });
   });
 }
