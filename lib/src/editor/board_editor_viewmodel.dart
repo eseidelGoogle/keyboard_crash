@@ -12,54 +12,18 @@ class BoardEditorViewModel with ChangeNotifier {
 
   static final _log = Logger('BoardEditorViewModel');
 
-  /// The parent scroll controller to use for scrollable widgets within the board editor view.
-  final scrollController = ScrollController();
-
   final BoardDetails details;
 
-  /// The period of time between sending save requests to the API.
-  final _throttleDuration = const Duration(seconds: 30);
-
   final _editorNodes = <String, EditorNode>{};
-  EditorNode? _selection;
-  Timer? _timer;
-
-  EditorNode? get selection => _selection;
   List<EditorNode> get nodes => _editorNodes.values.toList();
 
   bool get isEmpty => details.isEmpty;
   bool get isNotEmpty => !isEmpty;
   int get length => details.length;
 
-  bool get hasTextSelection => _selection != null;
-
-  bool get dirty => details.dirty;
-
-  void markNeedsSave({bool notify = true}) {
-    if (!dirty || _timer == null) {
-      _log.fine('Marking board state dirty');
-      details.dirty = true;
-      _timer ??= Timer(_throttleDuration, saveBoard);
-
-      if (notify) {
-        notifyListeners();
-      }
-    } else {
-      _log.fine('Board state already marked dirty');
-    }
-  }
-
-  void markSaveComplete() {
-    _log.fine('Marking board as saved');
-    details.dirty = false;
-    _timer?.cancel();
-    _timer = null;
-  }
-
   @override
   void dispose() {
     _log.fine('Disposing view model');
-    saveBoard();
     for (final node in _editorNodes.values) {
       node.dispose();
     }
@@ -71,7 +35,7 @@ class BoardEditorViewModel with ChangeNotifier {
     if (details.name != value) {
       _log.fine('Updating title: $value');
       details.name = value;
-      markNeedsSave();
+      notifyListeners();
     }
   }
 
@@ -79,7 +43,7 @@ class BoardEditorViewModel with ChangeNotifier {
     if (details.description != value) {
       _log.fine('Updating description: $value');
       details.description = value;
-      markNeedsSave();
+      notifyListeners();
     }
   }
 
@@ -97,7 +61,6 @@ class BoardEditorViewModel with ChangeNotifier {
     }
 
     details.moveBlock(oldIndex, newIndex);
-    markNeedsSave(notify: false);
     notifyListeners();
   }
 
@@ -106,7 +69,6 @@ class BoardEditorViewModel with ChangeNotifier {
     final block = details.removeAt(index);
     final node = _editorNodes.remove(block.uid);
     node?.dispose();
-    markNeedsSave(notify: false);
     notifyListeners();
   }
 
@@ -115,69 +77,23 @@ class BoardEditorViewModel with ChangeNotifier {
     final node = getEditorNode(element.uid);
     if (focused) {
       node.focus.requestFocus();
-      _selection = node;
     }
-    markNeedsSave(notify: false);
     notifyListeners();
     return node;
   }
-
-  /// Selects a new node in the board.
-  void select(String? value) {
-    if (value == null) {
-      // _log.fine('Clearing current selection: ($_selection -> null)');
-      clearSelection();
-    } else {
-      selectEditorNode(getEditorNode(value));
-    }
-  }
-
-  void selectEditorNode(EditorNode selection) {
-    if (selection != _selection) {
-      _selection = selection;
-      notifyListeners();
-    }
-    selection.focus.requestFocus();
-  }
-
-  void clearSelection() {
-    if (_selection != null) {
-      _selection!.focus.unfocus();
-      _selection = null;
-      notifyListeners();
-    }
-  }
-
-  Future<void> saveBoard() async {
-    _log.fine('Checking if board needs saving: $dirty');
-    if (!dirty) {
-      return;
-    }
-
-    _timer?.cancel();
-    _timer = null;
-
-    _log.fine('Simulating save');
-    final update = await Future.delayed(
-      const Duration(seconds: 1),
-      () => details..updated = DateTime.now(),
-    );
-
-    for (final block in details.blocks) {
-      final newNode = update.data[block];
-      final oldNode = details.data[block];
-      if (newNode != null && oldNode != null && newNode.id == null) {
-        oldNode.id = Random.secure().nextInt(1000);
-      }
-    }
-
-    markSaveComplete();
-  }
+  //
+  // /// Selects a new node in the board.
+  // void select(String? value) {
+  //   if (value != null) {
+  //     getEditorNode(value).focus.requestFocus();
+  //   } else {
+  //     FocusManager.instance.primaryFocus?.unfocus();
+  //   }
+  // }
 
   EditorNode getEditorNode(String uid) {
     return _editorNodes[uid] ??= EditorNode(
       block: details.data[uid]!,
-      onSelected: selectEditorNode,
       onTextChanged: onTextChanged,
     );
   }
@@ -199,7 +115,6 @@ class BoardEditorViewModel with ChangeNotifier {
     block.text = lines.first;
 
     if (lines.length == 1) {
-      markNeedsSave(notify: false);
       return;
     }
 
@@ -240,12 +155,12 @@ class BoardEditorViewModel with ChangeNotifier {
       final joined = prev.controller;
 
       removeAt(index, notify: false);
-      select(prev.uid);
+      getEditorNode(prev.uid).focus.requestFocus();
       joined.value = TextEditingValue(
         text: joined.text + editor.text,
         selection: TextSelection.collapsed(offset: joined.text.length),
       );
-      markNeedsSave();
+      notifyListeners();
       return;
     }
   }
@@ -254,12 +169,10 @@ class BoardEditorViewModel with ChangeNotifier {
 class EditorNode {
   EditorNode({
     required this.block,
-    required this.onSelected,
     required this.onTextChanged,
   }) : text = '$kMarker${block.text}' {
     _log.finest('Created new text editor node: $uid');
     controller.addListener(_onEditorChanged);
-    focus.addListener(_onFocusChanged);
   }
 
   static const kMarker = '\u0000';
@@ -276,12 +189,10 @@ class EditorNode {
   late final controller = TextEditingController(text: '$kMarker${block.text}');
   String text;
 
-  final ValueChanged<EditorNode> onSelected;
   final ValueChanged<EditorNode> onTextChanged;
 
   void dispose() {
     controller.removeListener(_onEditorChanged);
-    focus.removeListener(_onFocusChanged);
   }
 
   void onChanged(String value) {
@@ -305,12 +216,6 @@ class EditorNode {
           '    TextEditingController(text: \u2524$text\u251C [${text.length}]');
       _log.finest('    Selection: ${controller.selection} -> $selection');
       controller.selection = selection;
-    }
-  }
-
-  void _onFocusChanged() {
-    if (focus.hasFocus) {
-      onSelected(this);
     }
   }
 
