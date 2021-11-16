@@ -1,5 +1,4 @@
 import 'dart:math';
-import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -55,40 +54,13 @@ class NodeItem extends StatelessWidget {
         final block = viewModel.details[index];
         final node = viewModel.getEditorNode(block.uid);
 
-        return ReorderableShortDelayDragStartListener(
-          key: ValueKey('reorder-block-item-${block.uid}'),
-          index: index,
-          child: TextField(
-            autofocus: node.focus.hasPrimaryFocus,
-            focusNode: node.focus,
-            textInputAction: TextInputAction.newline,
-            textCapitalization: TextCapitalization.sentences,
-            maxLines: null,
-            controller: node.controller,
-            onChanged: node.onChanged,
-          ),
+        return TextField(
+          autofocus: node.focus.hasPrimaryFocus,
+          focusNode: node.focus,
+          controller: node.controller,
+          onChanged: node.onChanged,
         );
       },
-    );
-  }
-}
-
-/// A [ReorderableShortDelayDragStartListener] that has a delay slightly less
-/// than a long press so that we can support dragging a [TextField].
-class ReorderableShortDelayDragStartListener
-    extends ReorderableDelayedDragStartListener {
-  const ReorderableShortDelayDragStartListener({
-    Key? key,
-    required int index,
-    required Widget child,
-    bool enabled = true,
-  }) : super(key: key, index: index, child: child, enabled: enabled);
-
-  @override
-  MultiDragGestureRecognizer createRecognizer() {
-    return DelayedMultiDragGestureRecognizer(
-      debugOwner: this,
-      delay: kLongPressTimeout - const Duration(milliseconds: 50),
     );
   }
 }
@@ -156,15 +128,6 @@ class BoardDetails with ChangeNotifier {
     notifyListeners();
   }
 
-  BoardBlock removeAt(int index) {
-    final uid = blocks.removeAt(index);
-    try {
-      return data.remove(uid)!;
-    } finally {
-      dirty = true;
-    }
-  }
-
   void insertText(int index, BoardBlock element) {
     blocks.insert(index, element.uid);
     data[element.uid] = element;
@@ -222,9 +185,6 @@ class BoardEditorViewModel with ChangeNotifier {
 
   @override
   void dispose() {
-    for (final node in _editorNodes.values) {
-      node.dispose();
-    }
     _editorNodes.clear();
     super.dispose();
   }
@@ -246,13 +206,6 @@ class BoardEditorViewModel with ChangeNotifier {
 
   void moveBlock(int oldIndex, int newIndex) {}
 
-  void removeAt(int index, {bool notify = true}) {
-    final block = details.removeAt(index);
-    final node = _editorNodes.remove(block.uid);
-    node?.dispose();
-    notifyListeners();
-  }
-
   EditorNode insert(int index, BoardBlock element, {bool focused = false}) {
     details.insertText(index, element);
     final node = getEditorNode(element.uid);
@@ -273,10 +226,6 @@ class BoardEditorViewModel with ChangeNotifier {
   void onTextChanged(EditorNode node) {
     final block = node.block;
     final text = node.text;
-
-    if (!text.startsWith(EditorNode.kMarker)) {
-      return onLineDeleted(node);
-    }
 
     var value = text.substring(EditorNode.kMarker.length);
     if (value == block.text) {
@@ -313,42 +262,18 @@ class BoardEditorViewModel with ChangeNotifier {
       );
     }
   }
-
-  void onLineDeleted(EditorNode node) {
-    final editor = node.controller;
-    var index = indexOfNode(node);
-
-    for (int i = index - 1; i >= 0; --i) {
-      final block = details[i];
-
-      final prev = getEditorNode(block.uid);
-      final joined = prev.controller;
-
-      removeAt(index, notify: false);
-      getEditorNode(prev.uid).focus.requestFocus();
-      joined.value = TextEditingValue(
-        text: joined.text + editor.text,
-        selection: TextSelection.collapsed(offset: joined.text.length),
-      );
-      notifyListeners();
-      return;
-    }
-  }
 }
 
 class EditorNode {
   EditorNode({
     required this.block,
     required this.onTextChanged,
-  }) : text = '$kMarker${block.text}' {
-    controller.addListener(_onEditorChanged);
-  }
+  }) : text = '$kMarker${block.text}';
 
   static const kMarker = '\u0000';
 
   final BoardBlock block;
 
-  final key = GlobalKey();
   final focus = FocusNode();
 
   String get uid => block.uid;
@@ -358,26 +283,10 @@ class EditorNode {
 
   final ValueChanged<EditorNode> onTextChanged;
 
-  void dispose() {
-    controller.removeListener(_onEditorChanged);
-  }
-
   void onChanged(String value) {
     if (text != value) {
       text = value;
       onTextChanged(this);
-    }
-  }
-
-  void _onEditorChanged() {
-    if (controller.selection.base.offset == 0) {
-      final extentOffset = controller.selection.extentOffset;
-      final selection = controller.selection.copyWith(
-        baseOffset: kMarker.length.clamp(0, controller.text.length),
-        extentOffset:
-            max(kMarker.length, extentOffset).clamp(0, controller.text.length),
-      );
-      controller.selection = selection;
     }
   }
 }
