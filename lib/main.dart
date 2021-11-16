@@ -23,7 +23,6 @@ class MyApp extends StatelessWidget {
             return Column(
               children: [
                 TextFormField(
-                  initialValue: '',
                   onChanged: editor.setName,
                 ),
                 const NodeItem()
@@ -57,17 +56,7 @@ class NodeItem extends StatelessWidget {
   }
 }
 
-class BoardDetails with ChangeNotifier {
-  // Probably not needed.
-  set name(String? value) {
-    notifyListeners();
-  }
-}
-
 class BoardEditorViewModel with ChangeNotifier {
-  BoardEditorViewModel();
-
-  final BoardDetails details = BoardDetails();
   EditorNode node = EditorNode();
 
   void setName(String value) {
