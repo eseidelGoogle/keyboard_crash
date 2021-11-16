@@ -48,7 +48,7 @@ class NodeItem extends StatelessWidget {
         final node = viewModel.getEditorNode();
 
         return TextField(
-          autofocus: node.focus.hasPrimaryFocus,
+          // Focus node and controller seem required?
           focusNode: node.focus,
           controller: node.controller,
           onChanged: node.onChanged,
@@ -59,46 +59,16 @@ class NodeItem extends StatelessWidget {
 }
 
 class BoardDetails with ChangeNotifier {
-  final int id;
-  String? _name;
-  DateTime _updated;
-  bool _dirty;
   BoardBlock? block;
 
-  BoardDetails({
-    required this.id,
-    String? name = '',
-    DateTime? updated,
-    bool? dirty,
-  })  : _name = name,
-        _updated = updated ?? DateTime.now(),
-        _dirty = dirty ?? false;
-
-  String? get name => _name;
+  // Probably not needed.
   set name(String? value) {
-    if (_name != value) {
-      _name = value;
-      dirty = true;
-    }
-  }
-
-  DateTime get updated => _updated;
-  set updated(DateTime value) {
-    if (_updated != value) {
-      _updated = value;
-      dirty = true;
-    }
-  }
-
-  bool get dirty => _dirty;
-  set dirty(bool value) {
-    _dirty = value;
     notifyListeners();
   }
 
   void insertText(BoardBlock element) {
     block = element;
-    dirty = true;
+    notifyListeners();
   }
 }
 
@@ -111,14 +81,11 @@ class BoardBlock {
 class BoardEditorViewModel with ChangeNotifier {
   BoardEditorViewModel();
 
-  final BoardDetails details = BoardDetails(id: 1);
+  final BoardDetails details = BoardDetails();
   EditorNode? _editorNode;
 
   void setName(String value) {
-    if (details.name != value) {
-      details.name = value;
-      notifyListeners();
-    }
+    notifyListeners();
   }
 
   void appendText() {
