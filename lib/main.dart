@@ -1,52 +1,11 @@
-import 'dart:async';
-import 'dart:developer' as developer;
 import 'dart:math';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:flutter/widgets.dart';
-import 'package:logging_appenders/logging_appenders.dart';
-import 'package:logging/logging.dart' as logging;
-import 'package:logging/logging.dart';
 import 'package:provider/provider.dart';
-import 'package:uuid/uuid_util.dart';
-import 'package:uuid/uuid.dart';
-
-StreamSubscription<logging.LogRecord>? _logs;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  logging.hierarchicalLoggingEnabled = true;
-  logging.Logger.root
-    ..clearListeners()
-    ..level = logging.Level.ALL;
-  await _logs?.cancel();
-  _logs = logging.Logger.root.onRecord.listen(
-    PrintAppender(
-      formatter: const ColorFormatter(),
-    ),
-  );
-  final log = logging.Logger('main');
-  log.info('Running app init');
-
   runApp(const MyApp());
-}
-
-void onRecord(logging.LogRecord record) {
-  var level = record.level;
-  var tag = record.loggerName;
-  var message = record.message;
-  var error = record.error;
-  var stackTrace = record.stackTrace ?? StackTrace.current;
-
-  developer.log(
-    message,
-    level: level.value,
-    name: tag,
-    stackTrace: stackTrace,
-    error: error,
-  );
 }
 
 /// The Widget that configures your application.
@@ -218,10 +177,6 @@ class ReorderableShortDelayDragStartListener
   }
 }
 
-final _uuid = Uuid(options: {'grng': UuidUtil.cryptoRNG()});
-
-String uuid() => _uuid.v4();
-
 class BoardDetails with ChangeNotifier {
   final int id;
   String? _name;
@@ -365,6 +320,8 @@ class BoardDetails with ChangeNotifier {
   }
 }
 
+String uuid() => Random().nextDouble().toString();
+
 class BoardBlock {
   BoardBlock({
     this.id = 0,
@@ -380,8 +337,6 @@ class BoardBlock {
 class BoardEditorViewModel with ChangeNotifier {
   BoardEditorViewModel(this.details);
 
-  static final _log = Logger('BoardEditorViewModel');
-
   final BoardDetails details;
 
   final _editorNodes = <String, EditorNode>{};
@@ -393,7 +348,6 @@ class BoardEditorViewModel with ChangeNotifier {
 
   @override
   void dispose() {
-    _log.fine('Disposing view model');
     for (final node in _editorNodes.values) {
       node.dispose();
     }
@@ -403,7 +357,6 @@ class BoardEditorViewModel with ChangeNotifier {
 
   void setName(String value) {
     if (details.name != value) {
-      _log.fine('Updating title: $value');
       details.name = value;
       notifyListeners();
     }
@@ -411,7 +364,6 @@ class BoardEditorViewModel with ChangeNotifier {
 
   void setDescription(String value) {
     if (details.description != value) {
-      _log.fine('Updating description: $value');
       details.description = value;
       notifyListeners();
     }
@@ -435,7 +387,6 @@ class BoardEditorViewModel with ChangeNotifier {
   }
 
   void removeAt(int index, {bool notify = true}) {
-    _log.info('Removing board node @[$index]');
     final block = details.removeAt(index);
     final node = _editorNodes.remove(block.uid);
     node?.dispose();
@@ -498,7 +449,6 @@ class BoardEditorViewModel with ChangeNotifier {
     var index = indexOfNode(node);
     for (int i = 1; i < lines.length - 1; i++) {
       final line = lines[i];
-      _log.finest('[${node.uid}]: adding text node: $line');
       details[index + i] = BoardBlock(text: line);
     }
 
@@ -541,7 +491,6 @@ class EditorNode {
     required this.block,
     required this.onTextChanged,
   }) : text = '$kMarker${block.text}' {
-    _log.finest('Created new text editor node: $uid');
     controller.addListener(_onEditorChanged);
   }
 
@@ -554,8 +503,6 @@ class EditorNode {
 
   String get uid => block.uid;
 
-  static final _log = Logger('EditorNode');
-
   late final controller = TextEditingController(text: '$kMarker${block.text}');
   String text;
 
@@ -566,7 +513,6 @@ class EditorNode {
   }
 
   void onChanged(String value) {
-    _log.info('EditorNode.onChanged($value)');
     if (text != value) {
       text = value;
       onTextChanged(this);
@@ -581,10 +527,6 @@ class EditorNode {
         extentOffset:
             max(kMarker.length, extentOffset).clamp(0, controller.text.length),
       );
-      _log.finest('Moving cursor to in front of marker character:');
-      _log.finest(
-          '    TextEditingController(text: \u2524$text\u251C [${text.length}]');
-      _log.finest('    Selection: ${controller.selection} -> $selection');
       controller.selection = selection;
     }
   }
