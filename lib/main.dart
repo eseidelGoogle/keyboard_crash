@@ -1,4 +1,3 @@
-import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -27,9 +26,7 @@ class MyApp extends StatelessWidget {
                   initialValue: '',
                   onChanged: editor.setName,
                 ),
-                const NodeItem(
-                  0,
-                )
+                const NodeItem()
               ],
             );
           }),
@@ -40,19 +37,15 @@ class MyApp extends StatelessWidget {
 }
 
 class NodeItem extends StatelessWidget {
-  const NodeItem(
-    this.index, {
+  const NodeItem({
     Key? key,
   }) : super(key: key);
-
-  final int index;
 
   @override
   Widget build(BuildContext context) {
     return Consumer<BoardEditorViewModel>(
       builder: (context, viewModel, child) {
-        final block = viewModel.details[index];
-        final node = viewModel.getEditorNode(block.uid);
+        final node = viewModel.getEditorNode();
 
         return TextField(
           autofocus: node.focus.hasPrimaryFocus,
@@ -68,26 +61,18 @@ class NodeItem extends StatelessWidget {
 class BoardDetails with ChangeNotifier {
   final int id;
   String? _name;
-  final List<String> blocks;
-  final Map<String, BoardBlock> data;
   DateTime _updated;
   bool _dirty;
+  BoardBlock? block;
 
   BoardDetails({
     required this.id,
     String? name = '',
-    List<String> blocks = const [],
-    Map<String, BoardBlock>? data,
     DateTime? updated,
     bool? dirty,
   })  : _name = name,
         _updated = updated ?? DateTime.now(),
-        _dirty = dirty ?? false,
-        data = data ?? {},
-        blocks =
-            blocks.where((key) => data?.containsKey(key) ?? false).toList();
-
-  bool get isEmpty => blocks.isEmpty;
+        _dirty = dirty ?? false;
 
   String? get name => _name;
   set name(String? value) {
@@ -111,60 +96,23 @@ class BoardDetails with ChangeNotifier {
     notifyListeners();
   }
 
-  void insertText(int index, BoardBlock element) {
-    blocks.insert(index, element.uid);
-    data[element.uid] = element;
-    dirty = true;
-  }
-
-  void moveBlock(int oldIndex, int newIndex) {}
-
-  int get length => blocks.where(data.containsKey).length;
-
-  BoardBlock operator [](int index) {
-    final key = blocks[index];
-
-    if (!data.containsKey(key)) {
-      throw FlutterError('Asked for missing block at [$index]: $key');
-    }
-    return data[key]!;
-  }
-
-  void operator []=(int index, BoardBlock value) {
-    blocks[index] = value.uid;
-    data[value.uid] = value;
+  void insertText(BoardBlock element) {
+    block = element;
     dirty = true;
   }
 }
 
-String uuid() => Random().nextDouble().toString();
-
 class BoardBlock {
-  BoardBlock({
-    this.id = 0,
-    String? uid,
-    this.text = '',
-  }) : uid = uid ?? uuid();
-
-  int id;
-  String text;
-  final String uid;
+  int id = 0;
+  String text = '';
+  final String uid = '0';
 }
 
 class BoardEditorViewModel with ChangeNotifier {
   BoardEditorViewModel();
 
   final BoardDetails details = BoardDetails(id: 1);
-  final _editorNodes = <String, EditorNode>{};
-
-  bool get isEmpty => details.isEmpty;
-  int get length => details.length;
-
-  @override
-  void dispose() {
-    _editorNodes.clear();
-    super.dispose();
-  }
+  EditorNode? _editorNode;
 
   void setName(String value) {
     if (details.name != value) {
@@ -173,31 +121,24 @@ class BoardEditorViewModel with ChangeNotifier {
     }
   }
 
-  int indexOfNode(EditorNode node) {
-    return details.blocks.indexOf(node.uid);
-  }
-
   void appendText() {
-    insert(length, BoardBlock(), focused: true);
+    insert(BoardBlock());
   }
 
-  void moveBlock(int oldIndex, int newIndex) {}
-
-  EditorNode insert(int index, BoardBlock element, {bool focused = false}) {
-    details.insertText(index, element);
-    final node = getEditorNode(element.uid);
-    if (focused) {
-      node.focus.requestFocus();
-    }
+  EditorNode insert(BoardBlock element) {
+    details.insertText(element);
+    final node = getEditorNode();
+    node.focus.requestFocus();
     notifyListeners();
     return node;
   }
 
-  EditorNode getEditorNode(String uid) {
-    return _editorNodes[uid] ??= EditorNode(
-      block: details.data[uid]!,
+  EditorNode getEditorNode() {
+    _editorNode ??= EditorNode(
+      block: details.block!,
       onTextChanged: onTextChanged,
     );
+    return _editorNode!;
   }
 
   void onTextChanged(EditorNode node) {
