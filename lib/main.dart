@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
   runApp(const MyApp());
 }
 
@@ -18,89 +17,23 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       home: ChangeNotifierProvider(
-        create: (context) => BoardEditorViewModel(),
+        create: (context) => BoardEditorViewModel()..appendText(),
         builder: (context, child) => Scaffold(
           appBar: AppBar(),
-          body: Consumer<BoardEditorViewModel>(
-            builder: (context, editor, child) {
-              return Column(
-                children: [
-                  Expanded(
-                    child: CustomScrollView(
-                      slivers: [
-                        SliverToBoxAdapter(
-                          child: Padding(
-                            padding: const EdgeInsets.all(8.0),
-                            child: Column(
-                              children: [
-                                TextFormField(
-                                  initialValue: '',
-                                  onChanged: editor.setName,
-                                  decoration: const InputDecoration(
-                                    hintText: 'Untitled',
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                        if (editor.isEmpty)
-                          SliverToBoxAdapter(
-                            child: GestureDetector(
-                              onTap: () {
-                                editor.appendText();
-                              },
-                              child: const Padding(
-                                padding: EdgeInsets.only(left: 20, top: 16),
-                                child: Text('Tap here to start building'),
-                              ),
-                            ),
-                          )
-                        else
-                          SliverReorderableList(
-                            onReorder: editor.moveBlock,
-                            proxyDecorator: (child, index, animation) {
-                              return Material(
-                                child: FadeTransition(
-                                  opacity: animation,
-                                  child: PhysicalModel(
-                                    color: Colors.white,
-                                    elevation: 8,
-                                    shadowColor: Colors.black45,
-                                    borderRadius: BorderRadius.circular(4),
-                                    child: ChangeNotifierProvider.value(
-                                      value: editor,
-                                      child: child,
-                                    ),
-                                  ),
-                                ),
-                              );
-                            },
-                            itemCount: editor.details.length,
-                            itemBuilder: (context, index) => NodeItem(
-                              index,
-                              key: ValueKey(editor.details[index].uid),
-                            ),
-                          ),
-                        SliverFillRemaining(
-                          hasScrollBody: false,
-                          child: GestureDetector(
-                            behavior: HitTestBehavior.opaque,
-                            onTap: () {
-                              editor.appendText();
-                            },
-                            child: const SizedBox(
-                              height: 240.0,
-                            ),
-                          ),
-                        )
-                      ],
-                    ),
-                  ),
-                ],
-              );
-            },
-          ),
+          body:
+              Consumer<BoardEditorViewModel>(builder: (context, editor, child) {
+            return Column(
+              children: [
+                TextFormField(
+                  initialValue: '',
+                  onChanged: editor.setName,
+                ),
+                const NodeItem(
+                  0,
+                )
+              ],
+            );
+          }),
         ),
       ),
     );
@@ -124,7 +57,6 @@ class NodeItem extends StatelessWidget {
 
         return ReorderableShortDelayDragStartListener(
           key: ValueKey('reorder-block-item-${block.uid}'),
-          // enabled: !node.focus.hasPrimaryFocus,
           index: index,
           child: TextField(
             autofocus: node.focus.hasPrimaryFocus,
