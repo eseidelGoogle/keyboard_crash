@@ -21,12 +21,7 @@ class MyApp extends StatelessWidget {
           body:
               Consumer<BoardEditorViewModel>(builder: (context, editor, child) {
             return Column(
-              children: [
-                TextFormField(
-                  onChanged: editor.setName,
-                ),
-                const NodeItem()
-              ],
+              children: [TextFormField(), const NodeItem()],
             );
           }),
         ),
@@ -43,13 +38,11 @@ class NodeItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Consumer<BoardEditorViewModel>(
-      builder: (context, viewModel, child) {
-        final node = viewModel.node;
-
+      builder: (context, model, child) {
         return TextField(
           // Focus node and controller seem required?
-          focusNode: node.focus,
-          controller: node.controller,
+          focusNode: model.focus,
+          controller: model.controller,
         );
       },
     );
@@ -57,14 +50,6 @@ class NodeItem extends StatelessWidget {
 }
 
 class BoardEditorViewModel with ChangeNotifier {
-  EditorNode node = EditorNode();
-
-  void setName(String value) {
-    notifyListeners();
-  }
-}
-
-class EditorNode {
   // MARKER SEEMS REQUIRED?
   static const kMarker = '\u0000';
 
