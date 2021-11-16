@@ -234,33 +234,6 @@ class BoardEditorViewModel with ChangeNotifier {
 
     final lines = text.split('\n');
     block.text = lines.first;
-
-    if (lines.length == 1) {
-      return;
-    }
-
-    node.text = lines.first;
-    node.controller.value = TextEditingValue(
-      text: lines.first,
-      selection: TextSelection.collapsed(offset: lines.first.length),
-    );
-
-    var index = indexOfNode(node);
-    for (int i = 1; i < lines.length - 1; i++) {
-      final line = lines[i];
-      details[index + i] = BoardBlock(text: line);
-    }
-
-    final last = insert(
-      index + lines.length - 1,
-      BoardBlock(text: lines.last),
-      focused: true,
-    );
-    if (lines.last.trim().isNotEmpty) {
-      last.controller.selection = const TextSelection.collapsed(
-        offset: EditorNode.kMarker.length,
-      );
-    }
   }
 }
 
@@ -270,6 +243,7 @@ class EditorNode {
     required this.onTextChanged,
   }) : text = '$kMarker${block.text}';
 
+  // MARKER SEEMS REQUIRED?
   static const kMarker = '\u0000';
 
   final BoardBlock block;
