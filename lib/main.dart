@@ -15,7 +15,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       home: ChangeNotifierProvider(
-        create: (context) => BoardEditorViewModel()..appendText(),
+        create: (context) => BoardEditorViewModel(),
         builder: (context, child) => Scaffold(
           appBar: AppBar(),
           body:
@@ -45,13 +45,12 @@ class NodeItem extends StatelessWidget {
   Widget build(BuildContext context) {
     return Consumer<BoardEditorViewModel>(
       builder: (context, viewModel, child) {
-        final node = viewModel.getEditorNode();
+        final node = viewModel.node;
 
         return TextField(
           // Focus node and controller seem required?
           focusNode: node.focus,
           controller: node.controller,
-          onChanged: node.onChanged,
         );
       },
     );
@@ -59,63 +58,28 @@ class NodeItem extends StatelessWidget {
 }
 
 class BoardDetails with ChangeNotifier {
-  BoardBlock? block;
-
   // Probably not needed.
   set name(String? value) {
     notifyListeners();
   }
-
-  void insertText(BoardBlock element) {
-    block = element;
-    notifyListeners();
-  }
-}
-
-class BoardBlock {
-  String text = '';
 }
 
 class BoardEditorViewModel with ChangeNotifier {
   BoardEditorViewModel();
 
   final BoardDetails details = BoardDetails();
-  EditorNode? _editorNode;
+  EditorNode node = EditorNode();
 
   void setName(String value) {
     notifyListeners();
   }
-
-  void appendText() {
-    insert(BoardBlock());
-  }
-
-  EditorNode insert(BoardBlock element) {
-    details.insertText(element);
-    final node = getEditorNode();
-    node.focus.requestFocus();
-    notifyListeners();
-    return node;
-  }
-
-  EditorNode getEditorNode() {
-    _editorNode ??= EditorNode();
-    return _editorNode!;
-  }
 }
 
 class EditorNode {
-  EditorNode() : text = kMarker;
-
   // MARKER SEEMS REQUIRED?
   static const kMarker = '\u0000';
 
   final focus = FocusNode();
 
-  late final controller = TextEditingController(text: text);
-  String text;
-
-  void onChanged(String value) {
-    text = value;
-  }
+  late final controller = TextEditingController(text: kMarker);
 }
