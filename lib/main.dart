@@ -73,9 +73,7 @@ class BoardDetails with ChangeNotifier {
 }
 
 class BoardBlock {
-  int id = 0;
   String text = '';
-  final String uid = '0';
 }
 
 class BoardEditorViewModel with ChangeNotifier {
@@ -101,51 +99,23 @@ class BoardEditorViewModel with ChangeNotifier {
   }
 
   EditorNode getEditorNode() {
-    _editorNode ??= EditorNode(
-      block: details.block!,
-      onTextChanged: onTextChanged,
-    );
+    _editorNode ??= EditorNode();
     return _editorNode!;
-  }
-
-  void onTextChanged(EditorNode node) {
-    final block = node.block;
-    final text = node.text;
-
-    var value = text.substring(EditorNode.kMarker.length);
-    if (value == block.text) {
-      return;
-    }
-
-    final lines = text.split('\n');
-    block.text = lines.first;
   }
 }
 
 class EditorNode {
-  EditorNode({
-    required this.block,
-    required this.onTextChanged,
-  }) : text = '$kMarker${block.text}';
+  EditorNode() : text = kMarker;
 
   // MARKER SEEMS REQUIRED?
   static const kMarker = '\u0000';
 
-  final BoardBlock block;
-
   final focus = FocusNode();
 
-  String get uid => block.uid;
-
-  late final controller = TextEditingController(text: '$kMarker${block.text}');
+  late final controller = TextEditingController(text: text);
   String text;
 
-  final ValueChanged<EditorNode> onTextChanged;
-
   void onChanged(String value) {
-    if (text != value) {
-      text = value;
-      onTextChanged(this);
-    }
+    text = value;
   }
 }
