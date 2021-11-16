@@ -16,15 +16,11 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final board = BoardDetails(id: 1);
     return MaterialApp(
-      theme: ThemeData(),
       home: ChangeNotifierProvider(
-        create: (context) => BoardEditorViewModel(board),
+        create: (context) => BoardEditorViewModel(),
         builder: (context, child) => Scaffold(
-          appBar: AppBar(
-            title: const Text('Keyboard Crash Repro'),
-          ),
+          appBar: AppBar(),
           body: Consumer<BoardEditorViewModel>(
             builder: (context, editor, child) {
               return Column(
@@ -37,23 +33,11 @@ class MyApp extends StatelessWidget {
                             padding: const EdgeInsets.all(8.0),
                             child: Column(
                               children: [
-                                const SizedBox(
-                                  height: 272,
-                                  width: double.infinity,
-                                  child: FlutterLogo(),
-                                ),
                                 TextFormField(
-                                  initialValue: board.name ?? '',
+                                  initialValue: '',
                                   onChanged: editor.setName,
                                   decoration: const InputDecoration(
                                     hintText: 'Untitled',
-                                  ),
-                                ),
-                                TextFormField(
-                                  initialValue: board.description,
-                                  onChanged: editor.setDescription,
-                                  decoration: const InputDecoration(
-                                    hintText: '+ add a description',
                                   ),
                                 ),
                               ],
@@ -240,20 +224,6 @@ class BoardDetails with ChangeNotifier {
     notifyListeners();
   }
 
-  BoardBlock? getBlock(String uid) {
-    return data[uid];
-  }
-
-  void removeBlock(String uid) {
-    blocks.remove(uid);
-    data.remove(uid);
-    dirty = true;
-  }
-
-  BoardBlock? elementAt(int index) {
-    return getBlock(blocks[index]);
-  }
-
   BoardBlock removeAt(int index) {
     final uid = blocks.removeAt(index);
     try {
@@ -269,17 +239,7 @@ class BoardDetails with ChangeNotifier {
     dirty = true;
   }
 
-  void moveBlock(int oldIndex, int newIndex) {
-    // Fill the empty space if the new location is after the old location. This prevents skipping a
-    // spot when dropped.
-    if (oldIndex <= newIndex) {
-      newIndex--;
-    }
-    final block = blocks.removeAt(oldIndex);
-    // Clamp the insertion point to be the updated length of the list.
-    blocks.insert(newIndex.clamp(0, blocks.length), block);
-    dirty = true;
-  }
+  void moveBlock(int oldIndex, int newIndex) {}
 
   int get length => blocks.where(data.containsKey).length;
 
@@ -289,25 +249,10 @@ class BoardDetails with ChangeNotifier {
     dirty = true;
   }
 
-  set length(int newLength) {
-    if (newLength < length) {
-      for (int i = newLength; i < length; i++) {
-        data.remove(blocks[i]);
-      }
-    }
-    blocks.length = newLength;
-    dirty = true;
-  }
-
   BoardBlock operator [](int index) {
     final key = blocks[index];
 
     if (!data.containsKey(key)) {
-      // print('Asked for missing block at [$index]: $key');
-      // print('  Board nodes: $blocks');
-      // print('  Board data keys: ${data.keys}');
-      // print('  Board data blocks: $data');
-      // print('Asked for missing block at [$index]: $key');
       throw FlutterError('Asked for missing block at [$index]: $key');
     }
     return data[key]!;
@@ -335,15 +280,12 @@ class BoardBlock {
 }
 
 class BoardEditorViewModel with ChangeNotifier {
-  BoardEditorViewModel(this.details);
+  BoardEditorViewModel();
 
-  final BoardDetails details;
-
+  final BoardDetails details = BoardDetails(id: 1);
   final _editorNodes = <String, EditorNode>{};
-  List<EditorNode> get nodes => _editorNodes.values.toList();
 
   bool get isEmpty => details.isEmpty;
-  bool get isNotEmpty => !isEmpty;
   int get length => details.length;
 
   @override
@@ -362,13 +304,6 @@ class BoardEditorViewModel with ChangeNotifier {
     }
   }
 
-  void setDescription(String value) {
-    if (details.description != value) {
-      details.description = value;
-      notifyListeners();
-    }
-  }
-
   int indexOfNode(EditorNode node) {
     return details.blocks.indexOf(node.uid);
   }
@@ -377,14 +312,7 @@ class BoardEditorViewModel with ChangeNotifier {
     insert(length, BoardBlock(), focused: true);
   }
 
-  void moveBlock(int oldIndex, int newIndex) {
-    if (oldIndex == newIndex) {
-      return;
-    }
-
-    details.moveBlock(oldIndex, newIndex);
-    notifyListeners();
-  }
+  void moveBlock(int oldIndex, int newIndex) {}
 
   void removeAt(int index, {bool notify = true}) {
     final block = details.removeAt(index);
@@ -402,15 +330,6 @@ class BoardEditorViewModel with ChangeNotifier {
     notifyListeners();
     return node;
   }
-  //
-  // /// Selects a new node in the board.
-  // void select(String? value) {
-  //   if (value != null) {
-  //     getEditorNode(value).focus.requestFocus();
-  //   } else {
-  //     FocusManager.instance.primaryFocus?.unfocus();
-  //   }
-  // }
 
   EditorNode getEditorNode(String uid) {
     return _editorNodes[uid] ??= EditorNode(
@@ -439,7 +358,6 @@ class BoardEditorViewModel with ChangeNotifier {
       return;
     }
 
-    // _log.info('Multiple lines detected. Splitting additional lines to new text fields');
     node.text = lines.first;
     node.controller.value = TextEditingValue(
       text: lines.first,
@@ -530,16 +448,4 @@ class EditorNode {
       controller.selection = selection;
     }
   }
-
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      other is EditorNode &&
-          runtimeType == other.runtimeType &&
-          block == other.block &&
-          focus == other.focus &&
-          text == text;
-
-  @override
-  int get hashCode => block.hashCode ^ focus.hashCode ^ text.hashCode;
 }
