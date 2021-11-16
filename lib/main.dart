@@ -68,7 +68,6 @@ class NodeItem extends StatelessWidget {
 class BoardDetails with ChangeNotifier {
   final int id;
   String? _name;
-  String _description;
   final List<String> blocks;
   final Map<String, BoardBlock> data;
   DateTime _updated;
@@ -77,13 +76,11 @@ class BoardDetails with ChangeNotifier {
   BoardDetails({
     required this.id,
     String? name = '',
-    String description = '',
     List<String> blocks = const [],
     Map<String, BoardBlock>? data,
     DateTime? updated,
     bool? dirty,
   })  : _name = name,
-        _description = description,
         _updated = updated ?? DateTime.now(),
         _dirty = dirty ?? false,
         data = data ?? {},
@@ -92,24 +89,10 @@ class BoardDetails with ChangeNotifier {
 
   bool get isEmpty => blocks.isEmpty;
 
-  List<BoardBlock> toBlocks() {
-    final blocks = this.blocks.where(data.containsKey).toList();
-    return List.generate(
-        blocks.length, (index) => data[blocks[index]] as BoardBlock);
-  }
-
   String? get name => _name;
   set name(String? value) {
     if (_name != value) {
       _name = value;
-      dirty = true;
-    }
-  }
-
-  String get description => _description;
-  set description(String value) {
-    if (_description != value) {
-      _description = value;
       dirty = true;
     }
   }
@@ -137,12 +120,6 @@ class BoardDetails with ChangeNotifier {
   void moveBlock(int oldIndex, int newIndex) {}
 
   int get length => blocks.where(data.containsKey).length;
-
-  void add(BoardBlock element) {
-    blocks.add(element.uid);
-    data[element.uid] = element;
-    dirty = true;
-  }
 
   BoardBlock operator [](int index) {
     final key = blocks[index];
