@@ -27,8 +27,6 @@ class NodeItem extends StatelessWidget {
     return Consumer<BoardEditorViewModel>(
       builder: (context, node, child) {
         return TextField(
-          // Focus node and controller seem required?
-          focusNode: node.focus,
           controller: node.controller,
         );
       },
@@ -39,8 +37,6 @@ class NodeItem extends StatelessWidget {
 class BoardEditorViewModel with ChangeNotifier {
   // MARKER SEEMS REQUIRED?
   static const kMarker = '\u0000';
-
-  final focus = FocusNode();
 
   late final controller = TextEditingController(text: kMarker);
 }
