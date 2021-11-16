@@ -2,32 +2,19 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 void main() async {
-  runApp(const MyApp());
-}
-
-/// The Widget that configures your application.
-class MyApp extends StatelessWidget {
-  const MyApp({
-    Key? key,
-  }) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      home: ChangeNotifierProvider(
-        create: (context) => BoardEditorViewModel(),
-        builder: (context, child) => Scaffold(
-          appBar: AppBar(),
-          body:
-              Consumer<BoardEditorViewModel>(builder: (context, editor, child) {
-            return Column(
-              children: [TextFormField(), const NodeItem()],
-            );
-          }),
-        ),
+  runApp(MaterialApp(
+    home: ChangeNotifierProvider(
+      create: (context) => BoardEditorViewModel(),
+      builder: (context, child) => Scaffold(
+        appBar: AppBar(),
+        body: Consumer<BoardEditorViewModel>(builder: (context, editor, child) {
+          return Column(
+            children: [TextFormField(), const NodeItem()],
+          );
+        }),
       ),
-    );
-  }
+    ),
+  ));
 }
 
 class NodeItem extends StatelessWidget {
@@ -38,11 +25,11 @@ class NodeItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Consumer<BoardEditorViewModel>(
-      builder: (context, model, child) {
+      builder: (context, node, child) {
         return TextField(
           // Focus node and controller seem required?
-          focusNode: model.focus,
-          controller: model.controller,
+          focusNode: node.focus,
+          controller: node.controller,
         );
       },
     );
